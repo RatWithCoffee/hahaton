@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8090:8080"
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "dataset"
+      POSTGRES_USER: "some-user"
+      POSTGRES_PASSWORD: "12345"
+    ports:
+        - "5432:5432"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8081"
