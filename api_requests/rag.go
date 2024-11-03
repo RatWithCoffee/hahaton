@@ -16,9 +16,10 @@ type Chunks struct {
 }
 
 type ResultObject struct {
-	Tokens    []int `json:"tokens"`
-	Vector    []int `json:"vector"`
-	VectorLen int   `json:"vector_len"`
+	//Tokens    []int `json:"tokens"`
+	Text      string `json:"text"`
+	Vector    []int  `json:"vector"`
+	VectorLen int    `json:"vector_len"`
 }
 
 type Result struct {
@@ -34,15 +35,15 @@ func CreateDataForRag() {
 	}
 	res := Result{Data: make([]ResultObject, 0)}
 	for _, chunk := range chunks.Chunks {
-		tokens, err := Tokenize(chunk.Text)
+		//tokens, err := Tokenize(chunk.Text)
+		//if err != nil {
+		//	continue
+		//}
+		vector, err := TextEmbedding(chunk.Text)
 		if err != nil {
 			continue
 		}
-		vector, err := Embedding(tokens)
-		if err != nil {
-			continue
-		}
-		resObj := ResultObject{Tokens: tokens, Vector: vector, VectorLen: len(vector)}
+		resObj := ResultObject{Text: chunk.Text, Vector: vector, VectorLen: len(vector)}
 		res.Data = append(res.Data, resObj)
 	}
 	res.Count = len(res.Data)

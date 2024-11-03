@@ -1,1 +1,1 @@
-CREATE TABLE data (tokens integer[], chunks float[])
+CREATE TABLE data (text varchar, vector float[])
