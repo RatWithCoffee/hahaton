@@ -2,7 +2,7 @@ package api_requests
 
 const modelName = "meta-llama/Llama-3.2-11B-Vision-Instruct"
 
-const chunksFileName = "texts.json"
+const chunksFileName = "chunks/texts.json"
 
 const url = "https://mts-aidocprocessing-case-embedder.olymp.innopolis.university/"
 

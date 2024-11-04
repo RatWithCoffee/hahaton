@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 type Chunk struct {
@@ -16,37 +17,68 @@ type Chunks struct {
 }
 
 type ResultObject struct {
-	//Tokens    []int `json:"tokens"`
-	Text      string `json:"text"`
-	Vector    []int  `json:"vector"`
-	VectorLen int    `json:"vector_len"`
+	Text   string    `json:"text"`
+	Vector []float64 `json:"vector"`
 }
 
 type Result struct {
-	Count int            `json:"count"`
-	Data  []ResultObject `json:"data"`
+	Data []ResultObject `json:"data"`
+}
+
+type GetResponses struct {
+	mux    sync.Mutex
+	result Result
 }
 
 func CreateDataForRag() {
 	chunks, err := readChunksFile()
+	fmt.Println(len(chunks.Chunks))
 	if err != nil {
 		fmt.Println("Error reading chunks file:", err)
 		return
 	}
-	res := Result{Data: make([]ResultObject, 0)}
-	for _, chunk := range chunks.Chunks {
-		//tokens, err := Tokenize(chunk.Text)
-		//if err != nil {
-		//	continue
-		//}
-		vector, err := TextEmbedding(chunk.Text)
-		if err != nil {
-			continue
+
+	getResponses := GetResponses{mux: sync.Mutex{}, result: Result{Data: make([]ResultObject, 0)}}
+	var i int
+	wg := new(sync.WaitGroup)
+	poolSize := 50
+	for i < 8000 {
+		wg.Add(poolSize)
+		for j := i; j < i+poolSize; j++ {
+			if j >= len(chunks.Chunks) {
+				wg.Done()
+				continue
+			}
+			go func(text string) {
+				defer wg.Done()
+				vector, err := TextEmbedding(text)
+				if err != nil {
+					return
+				}
+				resObj := ResultObject{Text: text, Vector: vector}
+				getResponses.mux.Lock()
+				getResponses.result.Data = append(getResponses.result.Data, resObj)
+				getResponses.mux.Unlock()
+			}(chunks.Chunks[j].Text)
 		}
-		resObj := ResultObject{Text: chunk.Text, Vector: vector, VectorLen: len(vector)}
-		res.Data = append(res.Data, resObj)
+		wg.Wait()
+		i += poolSize
+		fmt.Println(i)
+
 	}
-	res.Count = len(res.Data)
+
+	//for i, chunk := range chunks.Chunks {
+	//	vector, err := TextEmbedding(chunk.Text)
+	//	fmt.Println(i, vector)
+	//	if err != nil {
+	//		continue
+	//	}
+	//	resObj := ResultObject{Text: chunk.Text, Vector: vector}
+	//	res.Data = append(res.Data, resObj)
+	//	if i == 10 {
+	//		break
+	//	}
+	//}
 
 	file, err := os.Create("data.json")
 	if err != nil {
@@ -56,7 +88,7 @@ func CreateDataForRag() {
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
-	err = encoder.Encode(res)
+	err = encoder.Encode(getResponses.result)
 	if err != nil {
 		fmt.Println("Error encoding JSON:", err)
 		return

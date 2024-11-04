@@ -16,9 +16,9 @@ type EmbedAllRequest struct {
 	TruncateDirection string  `json:"truncation_direction"`
 }
 
-type EmbedAllResponse [][][]int
+type EmbedAllResponse [][][]float64
 
-func TextEmbedding(text string) ([]int, error) {
+func TextEmbedding(text string) ([]float64, error) {
 	request := EmbedAllRequest{Inputs: text, TruncateDirection: "Right"}
 	data, err := json.Marshal(request)
 	if err != nil {
